@@ -54,10 +54,13 @@ jobs:
         with:
           channel: 'stable'
           cache: false
+      - name: Set up Rust for native plugins
+        uses: hecrj/setup-rust-action@v2
       - name: Record build tool versions
         run: |
           flutter --version
           java -version
+          rustc --version
       - name: Install Android verification tools
         run: sdkmanager 'build-tools;36.0.0'
       - run: flutter pub get
@@ -69,12 +72,14 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: python3 .github/scripts/android_signing.py
       - name: Build release APK
-        run: flutter build apk --release --no-pub
+        # --no-pub can leave integration_test in the generated release registrant:
+        # https://github.com/flutter/flutter/issues/169336
+        run: flutter build apk --release
       - name: Build release app bundle
         # Run pub get again for the localization workaround used by build.yml.
         run: |
           flutter pub get
-          flutter build appbundle --release --no-pub
+          flutter build appbundle --release
       - name: Verify release signatures
         env:
           ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
@@ -92,6 +97,7 @@ jobs:
           grep -q "^package: name='com.unicornsonlsd.finamp' " android-release/apk-manifest.txt
           flutter --version --machine > android-release/flutter-version.json
           git rev-parse HEAD > android-release/commit.txt
+          cp pubspec.lock android-release/pubspec.lock
           cd android-release
           sha256sum -- *.apk *.aab > SHA256SUMS
       - uses: actions/upload-artifact@v6

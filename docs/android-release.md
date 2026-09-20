@@ -48,10 +48,15 @@ Branch dispatches and forks do not run the release job. Pull requests changing
 the workflow or signing helper only run the signing helper tests, without secrets.
 Existing debug builds and integration tests in `build.yml` are unchanged.
 
+The release commands deliberately omit `--no-pub`: Flutter needs to regenerate
+the release plugin registrant, excluding `integration_test`. See
+[flutter/flutter#169336](https://github.com/flutter/flutter/issues/169336).
+
 Download the `finamp-android-release-<tag>` artifact from the successful run.
 Verify `SHA256SUMS` and review the APK certificate printed in the build log.
-The artifact also records the source commit, Flutter version, and APK manifest
-summary (including the package ID, version, target SDK, and supported ABIs).
+The artifact also records the source commit, Flutter version, resolved dependency
+lockfile, and APK manifest summary (including the package ID, version, target SDK,
+and supported ABIs).
 Upload the AAB to the intended Play testing track, review Play Console's
 validation and device availability, then test installation and upgrade through
 that track before promoting a release. Attach the APK and checksums to the
@@ -73,7 +78,8 @@ python3 -m unittest discover -s .github/scripts -p 'test_android_signing.py' -v
 The tests round-trip passwords containing whitespace, separators, backslashes,
 and Unicode through Java's actual `Properties` parser. They also check missing
 secrets, malformed base64, and preservation of existing local signing files.
-For a complete build, configure a test keystore using `android/key.properties`
+For a complete build, install the Flutter/Android toolchain and Rust (`rustup`),
+then configure a test keystore using `android/key.properties`
 as described in [CONTRIBUTING.md](../CONTRIBUTING.md), then run the two release
 build commands from the workflow. Test-signed release builds cannot update the
 official app; never uninstall a user's app or clear its data to test this pipeline.
