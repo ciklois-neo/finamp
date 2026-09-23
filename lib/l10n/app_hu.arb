@@ -2544,5 +2544,9 @@
             }
         }
     },
-  "loginFlowLocalNetworkServersNoResults": "Még nem találtunk szervert automatikusan. Ettől a szerver még elérhető lehet. A kapcsolódáshoz add meg fent a címét."
+  "loginFlowLocalNetworkServersNoResults": "Még nem találtunk szervert automatikusan. Ettől a szerver még elérhető lehet. A kapcsolódáshoz add meg fent a címét.",
+    "searchAll": "Összes",
+    "searchEverythingHint": "Keresés albumok, előadók, számok, lejátszási listák és műfajok között",
+    "searchMore": "További találatok",
+    "searchGroupError": "Ebben a kategóriában nem sikerült a keresés."
 }
