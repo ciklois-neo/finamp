@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:finamp/components/MusicScreen/all_search_view.dart';
+import 'package:finamp/services/all_search_provider.dart';
 import 'package:finamp/components/HomeScreen/finamp_music_screen_header.dart';
 import 'package:finamp/components/HomeScreen/home_screen_content.dart';
 import 'package:finamp/components/MusicScreen/artist_type_selection_row.dart';
@@ -50,6 +53,8 @@ class _MusicScreenState extends ConsumerState<MusicScreen> with TickerProviderSt
   bool isSearching = false;
   TextEditingController textEditingController = TextEditingController();
   String? searchQuery;
+  Timer? _searchDebounce;
+  ContentType? _tabBeforeSearch;
   final Map<ContentType, MusicRefreshCallback> refreshMap = {};
   final Map<ContentType, SortAndFilterController> sortAndFilterControllerMap = {};
 
@@ -71,11 +76,38 @@ class _MusicScreenState extends ConsumerState<MusicScreen> with TickerProviderSt
     library: currentLibraryPlaceholder.resolve2(ref),
   );
 
+  List<ContentType> _visibleTabs() {
+    final settings = ref.read(finampSettingsProvider).value ?? FinampSettingsHelper.finampSettings;
+    final tabs = settings.tabOrder.where((x) => x.isTab && (settings.showTabs[x] ?? false)).toList();
+    if (isSearching) {
+      tabs.remove(ContentType.home);
+      tabs.insert(0, ContentType.home);
+    }
+    return tabs;
+  }
+
+  void _startSearching() {
+    _tabBeforeSearch = widget.singleTabConfig == null ? _visibleTabs()[_tabController!.index] : null;
+    setState(() {
+      isSearching = true;
+      _buildTabController();
+    });
+  }
+
+  void _updateSearch(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (mounted) setState(() => searchQuery = value.trim());
+    });
+  }
+
   void _stopSearching() {
+    _searchDebounce?.cancel();
     setState(() {
       textEditingController.clear();
       searchQuery = null;
       isSearching = false;
+      _buildTabController();
     });
   }
 
@@ -92,16 +124,10 @@ class _MusicScreenState extends ConsumerState<MusicScreen> with TickerProviderSt
     if (widget.singleTabConfig != null) {
       _tabController = TabController(length: 1, vsync: this, initialIndex: 0);
     } else {
-      final tabs = ref
-          .watch(finampSettingsProvider.tabOrder)
-          .where((x) => x.isTab)
-          .where((e) => ref.watch(finampSettingsProvider.select((value) => value.value?.showTabs[e])) ?? false);
-
-      _tabController = TabController(
-        length: tabs.length,
-        vsync: this,
-        initialIndex: widget.initialTab == null ? 0 : tabs.toList().indexOf(widget.initialTab!),
-      );
+      final tabs = _visibleTabs();
+      final preferred = isSearching ? ContentType.home : (_tabBeforeSearch ?? widget.initialTab);
+      final index = preferred == null ? 0 : tabs.indexOf(preferred);
+      _tabController = TabController(length: tabs.length, vsync: this, initialIndex: index < 0 ? 0 : index);
     }
 
     _tabController!.addListener(_tabIndexCallback);
@@ -114,6 +140,7 @@ class _MusicScreenState extends ConsumerState<MusicScreen> with TickerProviderSt
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _tabController?.dispose();
     textEditingController.dispose();
     super.dispose();
@@ -185,6 +212,10 @@ class _MusicScreenState extends ConsumerState<MusicScreen> with TickerProviderSt
   }
 
   void refreshTab(ContentType tabType) {
+    if (isSearching && tabType == ContentType.home) {
+      ref.invalidate(allSearchProvider);
+      return;
+    }
     refreshMap[tabType]?.call();
   }
 
@@ -194,6 +225,8 @@ class _MusicScreenState extends ConsumerState<MusicScreen> with TickerProviderSt
       _buildTabController();
     }
     ref.watch(FinampUserHelper.finampCurrentUserProvider);
+    ref.watch(finampSettingsProvider.tabOrder);
+    ref.watch(finampSettingsProvider.select((value) => value.value?.showTabs));
     // Get the filtered tab or the tabs from the user's tab order,
     // and filter them to only include enabled tabs
     final sortedTabs = widget.singleTabConfig != null
@@ -204,9 +237,7 @@ class _MusicScreenState extends ConsumerState<MusicScreen> with TickerProviderSt
               CollectionHomeSection() => ContentType.mixed,
             },
           ]
-        : ref
-              .watch(finampSettingsProvider.tabOrder)
-              .where((e) => ref.watch(finampSettingsProvider.showTabs(e)) ?? false);
+        : _visibleTabs();
 
     if (sortedTabs.length != _tabController?.length) {
       _musicScreenLogger.info(
@@ -239,23 +270,9 @@ class _MusicScreenState extends ConsumerState<MusicScreen> with TickerProviderSt
           singleTabConfig: widget.singleTabConfig,
           sortedTabs: sortedTabs.toList(),
           tabController: _tabController,
-          onSearch: () => setState(() {
-            isSearching = true;
-            if (_tabController != null &&
-                !_tabController!.indexIsChanging &&
-                sortedTabs.elementAt(_tabController!.index) == ContentType.home) {
-              // we can't search on the home tab yet
-              _tabController!.index = sortedTabs.toList().indexWhere(
-                (ContentType tabType) => tabType != ContentType.home,
-              );
-            }
-          }),
+          onSearch: _startSearching,
           onStopSearch: _stopSearching,
-          onUpdateSearchQuery: (value) {
-            setState(() {
-              searchQuery = value;
-            });
-          },
+          onUpdateSearchQuery: _updateSearch,
           refreshTab: () => refreshTab(sortedTabs.elementAt(_tabController!.index)),
           textEditingController: textEditingController,
           isSearching: isSearching,
@@ -279,6 +296,7 @@ class _MusicScreenState extends ConsumerState<MusicScreen> with TickerProviderSt
               dragStartBehavior: DragStartBehavior.down,
               children: sortedTabs.map((tabType) {
                 if (tabType == ContentType.home && widget.singleTabConfig == null) {
+                  if (isSearching) return AllSearchView(query: searchQuery ?? '');
                   return HomeScreenContent(refresh: refreshMap[tabType]);
                 }
                 final contentTabType = tabType == ContentType.genericArtists

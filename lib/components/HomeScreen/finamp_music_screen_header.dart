@@ -76,8 +76,6 @@ class FinampMusicScreenHeader extends ConsumerWidget implements PreferredSizeWid
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    Timer? debounce;
-
     final activeTabBackgroundColor = ColorScheme.of(context).primaryContainer;
     final inactiveTabBackgroundColor = ColorScheme.of(context).surface;
     Color activeTabTextColor = AtContrast.getContrastiveTintedTextColor(onBackground: activeTabBackgroundColor);
@@ -207,12 +205,7 @@ class FinampMusicScreenHeader extends ConsumerWidget implements PreferredSizeWid
                       autofocus: true,
                       keyboardType: TextInputType.text,
                       textInputAction: TextInputAction.search,
-                      onChanged: (value) {
-                        if (debounce?.isActive ?? false) debounce!.cancel();
-                        debounce = Timer(const Duration(milliseconds: 400), () {
-                          onUpdateSearchQuery?.call(value);
-                        });
-                      },
+                      onChanged: onUpdateSearchQuery,
                       onSubmitted: (value) => onUpdateSearchQuery?.call(value),
                       decoration: InputDecoration(
                         border: InputBorder.none,
@@ -397,7 +390,9 @@ class FinampMusicScreenHeader extends ConsumerWidget implements PreferredSizeWid
                         : EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     constraints: const BoxConstraints(minWidth: 50),
                     alignment: Alignment.center,
-                    child: tabType == ContentType.home
+                    child: isSearching && tabType == ContentType.home
+                        ? Text(context.l10n.searchAll, style: textStyle)
+                        : tabType == ContentType.home
                         ? Row(
                             spacing: 4.0,
                             children: [
