@@ -1,5 +1,5 @@
 import 'package:finamp/components/Buttons/cta_medium.dart';
-import 'package:finamp/components/Buttons/simple_button.dart';
+import 'package:finamp/components/NetworkSettingsScreen/server_address_field.dart';
 import 'package:finamp/components/finamp_app_bar_back_button.dart';
 import 'package:finamp/components/NetworkSettingsScreen/active_network_display.dart';
 import 'package:finamp/components/NetworkSettingsScreen/auto_offline_selector.dart';
@@ -23,9 +23,37 @@ class NetworkSettingsScreen extends StatefulWidget {
 }
 
 class _NetworkSettingsScreenState extends State<NetworkSettingsScreen> {
-  final GlobalKey<LocalNetworkAddressSelectorState> localNetworkAddressKey = GlobalKey(
-    debugLabel: "localNetworkAddressKey",
-  );
+  final publicAddressKey = GlobalKey<ServerAddressFieldState>();
+  final localNetworkAddressKey = GlobalKey<ServerAddressFieldState>();
+  bool _busy = false;
+
+  Future<void> _save({bool test = false}) async {
+    if (_busy) return;
+    final fields = [publicAddressKey.currentState, localNetworkAddressKey.currentState];
+    final valid = fields.map((field) => field?.validate() ?? false).toList();
+    if (valid.contains(false)) return;
+    setState(() => _busy = true);
+    try {
+      for (final field in fields) {
+        if (!await field!.commitIfChanged()) return;
+      }
+      if (!mounted) return;
+      FocusScope.of(context).unfocus();
+      if (test) {
+        final [public, local] = await Future.wait([
+          GetIt.instance<JellyfinApiHelper>().pingPublicServer(),
+          GetIt.instance<JellyfinApiHelper>().pingLocalServer(),
+        ]);
+        GlobalSnackbar.message((context) => AppLocalizations.of(context)!.ping("${public}_${local}"));
+      } else {
+        GlobalSnackbar.message((context) => AppLocalizations.of(context)!.networkSettingsSaved);
+      }
+    } catch (error) {
+      GlobalSnackbar.error(error);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,30 +71,26 @@ class _NetworkSettingsScreenState extends State<NetworkSettingsScreen> {
           AutoOfflineSelector(),
           Divider(),
           ActiveNetworkDisplay(),
-          PublicAddressSelector(),
+          PublicAddressSelector(fieldKey: publicAddressKey),
           LocalNetworkSelector(),
-          LocalNetworkAddressSelector(key: localNetworkAddressKey),
+          LocalNetworkAddressSelector(fieldKey: localNetworkAddressKey),
           SizedBox(height: 32.0),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 12,
+            runSpacing: 12,
             children: [
+              CTAMedium(
+                text: AppLocalizations.of(context)!.save,
+                icon: TablerIcons.device_floppy,
+                disabled: _busy,
+                onPressed: () => _save(),
+              ),
               CTAMedium(
                 text: AppLocalizations.of(context)!.testConnectionButtonLabel,
                 icon: TablerIcons.plug_connected,
-                onPressed: () async {
-                  // Ensure any pending edits in the local network address field are committed first
-                  final widgetState = localNetworkAddressKey.currentState;
-                  if (widgetState != null) {
-                    await widgetState.commitIfChanged();
-                  }
-                  final [public, private] = await Future.wait([
-                    GetIt.instance<JellyfinApiHelper>().pingPublicServer(),
-                    GetIt.instance<JellyfinApiHelper>().pingLocalServer(),
-                  ]);
-                  GlobalSnackbar.message(
-                    (context) => AppLocalizations.of(context)!.ping("${public.toString()}_${private.toString()}"),
-                  );
-                },
+                disabled: _busy,
+                onPressed: () => _save(test: true),
               ),
             ],
           ),

@@ -2548,5 +2548,7 @@
     "searchAll": "Összes",
     "searchEverythingHint": "Keresés albumok, előadók, számok, lejátszási listák és műfajok között",
     "searchMore": "További találatok",
-    "searchGroupError": "Ebben a kategóriában nem sikerült a keresés."
+    "searchGroupError": "Ebben a kategóriában nem sikerült a keresés.",
+    "invalidServerAddress": "Adj meg érvényes http:// vagy https:// szervercímet, lekérdezés és töredék nélkül.",
+    "networkSettingsSaved": "A hálózati címek mentve."
 }
