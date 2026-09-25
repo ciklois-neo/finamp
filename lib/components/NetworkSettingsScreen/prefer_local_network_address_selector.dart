@@ -17,17 +17,21 @@ class LocalNetworkAddressSelector extends ConsumerWidget {
     return ListTile(
       enabled: enabled,
       title: Text(AppLocalizations.of(context)!.preferLocalNetworkTargetAddressLocalSettingTitle),
-      subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(AppLocalizations.of(context)!.preferLocalNetworkTargetAddressLocalSettingDescription),
-        ServerAddressField(
-          key: fieldKey, enabled: enabled,
-          address: user?.localAddress ?? DefaultSettings.localNetworkAddress,
-          onCommit: (address) async {
-            GetIt.instance<FinampUserHelper>().currentUser?.update(newLocalAddress: address);
-            await changeTargetUrl();
-          },
-        ),
-      ]),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(AppLocalizations.of(context)!.preferLocalNetworkTargetAddressLocalSettingDescription),
+          ServerAddressField(
+            key: fieldKey,
+            enabled: enabled,
+            address: user?.localAddress ?? DefaultSettings.localNetworkAddress,
+            onCommit: (address) async {
+              GetIt.instance<FinampUserHelper>().currentUser?.update(newLocalAddress: address);
+              await changeTargetUrl();
+            },
+          ),
+        ],
+      ),
     );
   }
 }

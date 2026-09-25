@@ -1114,7 +1114,7 @@ class JellyfinApiHelper {
     final Request $request = Request('GET', Uri.parse("/System/Endpoint"), client.baseUrl);
 
     try {
-      Response<dynamic> response = await client.send<dynamic, dynamic>($request);
+      Response<dynamic> response = await client.send<dynamic, dynamic>($request).timeout(const Duration(seconds: 3));
       if (response.statusCode != 200) return false;
       final body = response.bodyOrThrow as Map<String, dynamic>;
       // If IsInNetwork doesn't exist -> return false
@@ -1123,6 +1123,8 @@ class JellyfinApiHelper {
     } catch (e) {
       Logger("Ayoo").severe(e);
       return false;
+    } finally {
+      client.dispose();
     }
   }
 

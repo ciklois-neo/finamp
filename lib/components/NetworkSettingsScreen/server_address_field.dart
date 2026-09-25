@@ -15,11 +15,13 @@ class ServerAddressFieldState extends State<ServerAddressField> {
   late final _controller = TextEditingController(text: widget.address);
   final _focusNode = FocusNode();
   final _fieldKey = GlobalKey<FormFieldState<String>>();
-  late String _committed = widget.address;
+  late String _committed;
+  Future<void>? _pendingCommit;
 
   @override
   void initState() {
     super.initState();
+    _committed = widget.address;
     _focusNode.addListener(() {
       if (!_focusNode.hasFocus) commitIfChanged();
     });
@@ -38,6 +40,9 @@ class ServerAddressFieldState extends State<ServerAddressField> {
   bool validate() => !widget.enabled || (_fieldKey.currentState?.validate() ?? false);
 
   Future<bool> commitIfChanged() async {
+    // Save must also wait for a commit triggered by focus loss.
+    if (_pendingCommit != null) await _pendingCommit;
+    if (!mounted) return false;
     if (!validate()) return false;
     if (!widget.enabled) return true;
     final value = _controller.text.trim();
@@ -46,11 +51,14 @@ class ServerAddressFieldState extends State<ServerAddressField> {
     // Focus loss and an explicit Save can occur in the same frame.
     _committed = value;
     try {
-      await widget.onCommit(value);
+      _pendingCommit = widget.onCommit(value);
+      await _pendingCommit;
       return true;
     } catch (_) {
       _committed = previous;
       rethrow;
+    } finally {
+      _pendingCommit = null;
     }
   }
 
@@ -83,6 +91,10 @@ bool isValidServerAddress(String value) {
   final uri = Uri.tryParse(trimmed);
   if (uri == null || RegExp(r'\s').hasMatch(trimmed)) return false;
   return (uri.scheme == 'http' || uri.scheme == 'https') &&
-      uri.host.isNotEmpty && uri.userInfo.isEmpty && !uri.hasQuery && !uri.hasFragment &&
-      uri.port > 0 && uri.port <= 65535;
+      uri.host.isNotEmpty &&
+      uri.userInfo.isEmpty &&
+      !uri.hasQuery &&
+      !uri.hasFragment &&
+      uri.port > 0 &&
+      uri.port <= 65535;
 }

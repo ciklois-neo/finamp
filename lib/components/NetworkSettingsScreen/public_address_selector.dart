@@ -12,16 +12,19 @@ class PublicAddressSelector extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) => ListTile(
     title: Text(AppLocalizations.of(context)!.preferLocalNetworkPublicAddressSettingTitle),
-    subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(AppLocalizations.of(context)!.preferLocalNetworkPublicAddressSettingDescription),
-      ServerAddressField(
-        key: fieldKey,
-        address: ref.watch(FinampUserHelper.finampCurrentUserProvider)?.publicAddress ?? '',
-        onCommit: (address) async {
-          GetIt.instance<FinampUserHelper>().currentUser?.update(newPublicAddress: address);
-          await changeTargetUrl();
-        },
-      ),
-    ]),
+    subtitle: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(AppLocalizations.of(context)!.preferLocalNetworkPublicAddressSettingDescription),
+        ServerAddressField(
+          key: fieldKey,
+          address: ref.watch(FinampUserHelper.finampCurrentUserProvider)?.publicAddress ?? '',
+          onCommit: (address) async {
+            GetIt.instance<FinampUserHelper>().currentUser?.update(newPublicAddress: address);
+            await changeTargetUrl();
+          },
+        ),
+      ],
+    ),
   );
 }

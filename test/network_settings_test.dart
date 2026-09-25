@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:finamp/components/NetworkSettingsScreen/server_address_field.dart';
 import 'package:finamp/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -14,8 +16,18 @@ void main() {
     for (final address in ['http://server:8096', 'https://music.example/jellyfin', ' http://[::1]:8096/ ']) {
       expect(isValidServerAddress(address), isTrue, reason: address);
     }
-    for (final address in ['', 'server:8096', 'httpfoo', 'http://', 'ftp://server', 'http://a b',
-      'http://server:99999', 'https://user:pass@server', 'https://server?token=secret', 'https://server/#home']) {
+    for (final address in [
+      '',
+      'server:8096',
+      'httpfoo',
+      'http://',
+      'ftp://server',
+      'http://a b',
+      'http://server:99999',
+      'https://user:pass@server',
+      'https://server?token=secret',
+      'https://server/#home',
+    ]) {
       expect(isValidServerAddress(address), isFalse, reason: address);
     }
   });
@@ -23,10 +35,22 @@ void main() {
   testWidgets('Save commits edited address without submitting keyboard', (tester) async {
     final key = GlobalKey<ServerAddressFieldState>();
     final saved = <String>[];
-    await tester.pumpWidget(screen(Column(children: [
-      ServerAddressField(key: key, address: 'http://old:8096', onCommit: (s) async { saved.add(s); }),
-      TextButton(onPressed: () => key.currentState!.commitIfChanged(), child: const Text('Save')),
-    ])));
+    await tester.pumpWidget(
+      screen(
+        Column(
+          children: [
+            ServerAddressField(
+              key: key,
+              address: 'http://old:8096',
+              onCommit: (s) async {
+                saved.add(s);
+              },
+            ),
+            TextButton(onPressed: () => key.currentState!.commitIfChanged(), child: const Text('Save')),
+          ],
+        ),
+      ),
+    );
     await tester.enterText(find.byType(TextFormField), ' http://remote:8096 ');
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
@@ -37,10 +61,21 @@ void main() {
 
   testWidgets('focus loss persists a public address', (tester) async {
     final saved = <String>[];
-    await tester.pumpWidget(screen(Column(children: [
-      ServerAddressField(address: 'http://old', onCommit: (s) async { saved.add(s); }),
-      const TextField(key: Key('other')),
-    ])));
+    await tester.pumpWidget(
+      screen(
+        Column(
+          children: [
+            ServerAddressField(
+              address: 'http://old',
+              onCommit: (s) async {
+                saved.add(s);
+              },
+            ),
+            const TextField(key: Key('other')),
+          ],
+        ),
+      ),
+    );
     await tester.enterText(find.byType(TextFormField), 'http://remote');
     await tester.tap(find.byKey(const Key('other')));
     await tester.pumpAndSettle();
@@ -50,7 +85,17 @@ void main() {
   testWidgets('invalid edit stays uncommitted and can be corrected', (tester) async {
     final key = GlobalKey<ServerAddressFieldState>();
     final saved = <String>[];
-    await tester.pumpWidget(screen(ServerAddressField(key: key, address: 'http://old', onCommit: (s) async { saved.add(s); })));
+    await tester.pumpWidget(
+      screen(
+        ServerAddressField(
+          key: key,
+          address: 'http://old',
+          onCommit: (s) async {
+            saved.add(s);
+          },
+        ),
+      ),
+    );
     await tester.enterText(find.byType(TextFormField), 'http://');
     expect(await key.currentState!.commitIfChanged(), isFalse);
     await tester.pumpAndSettle();
@@ -63,7 +108,18 @@ void main() {
 
   testWidgets('disabled local address does not block saving the public address', (tester) async {
     final key = GlobalKey<ServerAddressFieldState>();
-    await tester.pumpWidget(screen(ServerAddressField(key: key, address: '', enabled: false, onCommit: (_) async { fail('disabled field saved'); })));
+    await tester.pumpWidget(
+      screen(
+        ServerAddressField(
+          key: key,
+          address: '',
+          enabled: false,
+          onCommit: (_) async {
+            fail('disabled field saved');
+          },
+        ),
+      ),
+    );
     expect(await key.currentState!.commitIfChanged(), isTrue);
   });
 
@@ -77,4 +133,24 @@ void main() {
     await tester.pumpWidget(field('http://reset'));
     expect(find.text('http://pending'), findsOneWidget);
   });
+  testWidgets('Save waits for an already running focus-loss commit', (tester) async {
+    final key = GlobalKey<ServerAddressFieldState>();
+    final done = Completer<void>();
+    var calls = 0;
+    await tester.pumpWidget(screen(ServerAddressField(
+      key: key, address: 'http://old', onCommit: (_) { calls++; return done.future; },
+    )));
+    await tester.enterText(find.byType(TextFormField), 'http://new');
+    final first = key.currentState!.commitIfChanged();
+    var saved = false;
+    final second = key.currentState!.commitIfChanged().then((_) { saved = true; });
+    await tester.pump();
+    expect(saved, isFalse);
+    done.complete();
+    await first;
+    await second;
+    expect(saved, isTrue);
+    expect(calls, 1);
+  });
+
 }
