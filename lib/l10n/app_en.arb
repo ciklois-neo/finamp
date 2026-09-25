@@ -3765,5 +3765,7 @@
     "searchAll": "All",
     "searchEverythingHint": "Search albums, artists, tracks, playlists and genres",
     "searchMore": "Show more",
-    "searchGroupError": "Could not search this category."
+    "searchGroupError": "Could not search this category.",
+    "invalidServerAddress": "Enter a valid http:// or https:// server address, without a query or fragment.",
+    "networkSettingsSaved": "Network addresses saved."
 }

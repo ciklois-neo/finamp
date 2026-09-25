@@ -174,9 +174,7 @@ class PagedContent extends _$PagedContent {
         case MusicScreenPlayable<FinampPlayableDto> library:
           final libraryId = library.library.resolve(ref);
           if (libraryId != null && ref.exists(itemByIdProvider(libraryId))) {
-            try {
-              ref.read(itemByIdProvider(libraryId));
-            } catch (_) {
+            if (ref.read(itemByIdProvider(libraryId)).hasError) {
               ref.invalidate(itemByIdProvider(libraryId));
             }
           }
@@ -200,9 +198,7 @@ class PagedContent extends _$PagedContent {
       case MusicScreenPlayable<FinampPlayableDto> library:
         final libraryId = library.library.resolve(ref);
         if (libraryId != null && ref.exists(itemByIdProvider(libraryId))) {
-          try {
-            ref.read(itemByIdProvider(libraryId));
-          } catch (_) {
+          if (ref.read(itemByIdProvider(libraryId)).hasError) {
             ref.invalidate(itemByIdProvider(libraryId));
           }
         }

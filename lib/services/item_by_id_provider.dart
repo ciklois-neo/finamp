@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:finamp/models/jellyfin_models.dart';
 import 'package:finamp/services/downloads_service.dart';
 import 'package:finamp/services/finamp_settings_helper.dart';
+import 'package:finamp/services/finamp_user_helper.dart';
 import 'package:finamp/services/jellyfin_api_helper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
@@ -12,6 +13,9 @@ part 'item_by_id_provider.g.dart';
 
 @riverpod
 Future<BaseItemDto?> itemById(Ref ref, BaseItemId baseItemId) async {
+  // A failed library lookup from the previous address must not survive a
+  // server-address change and keep all dependent home sections in an error state.
+  ref.watch(FinampUserHelper.finampCurrentUserProvider.select((user) => user?.baseURL));
   final jellyfinApiHelper = GetIt.instance<JellyfinApiHelper>();
   final downloadsService = GetIt.instance<DownloadsService>();
 
