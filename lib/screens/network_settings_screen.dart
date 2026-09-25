@@ -67,34 +67,36 @@ class _NetworkSettingsScreenState extends State<NetworkSettingsScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 200.0),
-        child: Column(children: [
-          AutoOfflineSelector(),
-          Divider(),
-          ActiveNetworkDisplay(),
-          PublicAddressSelector(fieldKey: publicAddressKey),
-          LocalNetworkSelector(),
-          LocalNetworkAddressSelector(fieldKey: localNetworkAddressKey),
-          SizedBox(height: 32.0),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              CTAMedium(
-                text: AppLocalizations.of(context)!.save,
-                icon: TablerIcons.device_floppy,
-                disabled: _busy,
-                onPressed: () => _save(),
-              ),
-              CTAMedium(
-                text: AppLocalizations.of(context)!.testConnectionButtonLabel,
-                icon: TablerIcons.plug_connected,
-                disabled: _busy,
-                onPressed: () => _save(test: true),
-              ),
-            ],
-          ),
-        ]),
+        child: Column(
+          children: [
+            AutoOfflineSelector(),
+            Divider(),
+            ActiveNetworkDisplay(),
+            PublicAddressSelector(fieldKey: publicAddressKey),
+            LocalNetworkSelector(),
+            LocalNetworkAddressSelector(fieldKey: localNetworkAddressKey),
+            SizedBox(height: 32.0),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                CTAMedium(
+                  text: AppLocalizations.of(context)!.save,
+                  icon: TablerIcons.device_floppy,
+                  disabled: _busy,
+                  onPressed: () => _save(),
+                ),
+                CTAMedium(
+                  text: AppLocalizations.of(context)!.testConnectionButtonLabel,
+                  icon: TablerIcons.plug_connected,
+                  disabled: _busy,
+                  onPressed: () => _save(test: true),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

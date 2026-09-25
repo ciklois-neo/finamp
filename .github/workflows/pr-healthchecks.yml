@@ -77,3 +77,15 @@ jobs:
             git diff --cached | cat
             exit 2
           fi
+
+  unit-tests:
+    name: Flutter regression tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter test

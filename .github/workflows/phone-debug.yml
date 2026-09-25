@@ -1,8 +1,6 @@
 name: Phone debug validation
 on:
   workflow_dispatch:
-  push:
-    branches: [fix/network-address-saving]
 permissions:
   contents: read
 jobs:
