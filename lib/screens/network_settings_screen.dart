@@ -65,9 +65,9 @@ class _NetworkSettingsScreenState extends State<NetworkSettingsScreen> {
           FinampSettingsHelper.makeSettingsResetButtonWithDialog(context, FinampSettingsHelper.resetNetworkSettings),
         ],
       ),
-      body: ListView(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 200.0),
-        children: [
+        child: Column(children: [
           AutoOfflineSelector(),
           Divider(),
           ActiveNetworkDisplay(),
@@ -94,7 +94,7 @@ class _NetworkSettingsScreenState extends State<NetworkSettingsScreen> {
               ),
             ],
           ),
-        ],
+        ]),
       ),
     );
   }

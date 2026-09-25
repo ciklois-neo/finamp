@@ -137,13 +137,24 @@ void main() {
     final key = GlobalKey<ServerAddressFieldState>();
     final done = Completer<void>();
     var calls = 0;
-    await tester.pumpWidget(screen(ServerAddressField(
-      key: key, address: 'http://old', onCommit: (_) { calls++; return done.future; },
-    )));
+    await tester.pumpWidget(
+      screen(
+        ServerAddressField(
+          key: key,
+          address: 'http://old',
+          onCommit: (_) {
+            calls++;
+            return done.future;
+          },
+        ),
+      ),
+    );
     await tester.enterText(find.byType(TextFormField), 'http://new');
     final first = key.currentState!.commitIfChanged();
     var saved = false;
-    final second = key.currentState!.commitIfChanged().then((_) { saved = true; });
+    final second = key.currentState!.commitIfChanged().then((_) {
+      saved = true;
+    });
     await tester.pump();
     expect(saved, isFalse);
     done.complete();
@@ -152,5 +163,4 @@ void main() {
     expect(saved, isTrue);
     expect(calls, 1);
   });
-
 }

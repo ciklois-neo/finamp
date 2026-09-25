@@ -1,3 +1,4 @@
+import 'package:finamp/components/global_snackbar.dart';
 import 'package:finamp/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -23,7 +24,7 @@ class ServerAddressFieldState extends State<ServerAddressField> {
     super.initState();
     _committed = widget.address;
     _focusNode.addListener(() {
-      if (!_focusNode.hasFocus) commitIfChanged();
+      if (!_focusNode.hasFocus) _commitFromField();
     });
   }
 
@@ -62,6 +63,14 @@ class ServerAddressFieldState extends State<ServerAddressField> {
     }
   }
 
+  void _commitFromField() async {
+    try {
+      await commitIfChanged();
+    } catch (error) {
+      GlobalSnackbar.error(error);
+    }
+  }
+
   @override
   void dispose() {
     _focusNode.dispose();
@@ -82,7 +91,7 @@ class ServerAddressFieldState extends State<ServerAddressField> {
     textInputAction: TextInputAction.done,
     autovalidateMode: AutovalidateMode.onUserInteraction,
     validator: (value) => isValidServerAddress(value ?? '') ? null : AppLocalizations.of(context)!.invalidServerAddress,
-    onFieldSubmitted: (_) => commitIfChanged(),
+    onFieldSubmitted: (_) => _commitFromField(),
   );
 }
 

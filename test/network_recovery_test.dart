@@ -17,6 +17,7 @@ class FakeApi implements JellyfinApiHelper {
     if (calls == 1) throw Exception('old address is unreachable');
     return BaseItemDto(id: id, name: 'Music');
   }
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -32,15 +33,32 @@ void main() {
     GetIt.instance.registerSingleton<JellyfinApiHelper>(api);
     GetIt.instance.registerSingleton<DownloadsService>(UnusedDownloads());
     addTearDown(GetIt.instance.reset);
-    final user = FinampUser(id: 'test', publicAddress: 'http://old', localAddress: '',
-      preferLocalNetwork: false, isLocal: false, accessToken: 'test', serverId: 'test');
-    final settings = FinampSettings(downloadLocations: [], downloadLocationsMap: {}, tabSortBy: {}, tabSortOrder: {},
-      homeScreenConfiguration: DefaultSettings.homeScreenConfiguration, gridImageSize: DefaultSettings.gridImageSize,
-      homeScreenImageSize: DefaultSettings.homeScreenImageSize, deviceId: 'test', isOffline: false);
-    final container = ProviderContainer(overrides: [
-      finampSettingsProvider.overrideWith((ref) => Stream.value(settings)),
-      FinampUserHelper.finampCurrentUserProvider.overrideWith((ref) => user),
-    ]);
+    var user = FinampUser(
+      id: 'test',
+      publicAddress: 'http://old',
+      localAddress: '',
+      preferLocalNetwork: false,
+      isLocal: false,
+      accessToken: 'test',
+      serverId: 'test',
+    );
+    final settings = FinampSettings(
+      downloadLocations: [],
+      downloadLocationsMap: {},
+      tabSortBy: {},
+      tabSortOrder: {},
+      homeScreenConfiguration: DefaultSettings.homeScreenConfiguration,
+      gridImageSize: DefaultSettings.gridImageSize,
+      homeScreenImageSize: DefaultSettings.homeScreenImageSize,
+      deviceId: 'test',
+      isOffline: false,
+    );
+    final container = ProviderContainer(
+      overrides: [
+        finampSettingsProvider.overrideWith((ref) => Stream.value(settings)),
+        FinampUserHelper.finampCurrentUserProvider.overrideWith((ref) => user),
+      ],
+    );
     addTearDown(container.dispose);
     await container.read(finampSettingsProvider.future);
     final provider = itemByIdProvider(const BaseItemId('library'));
@@ -48,7 +66,16 @@ void main() {
     addTearDown(subscription.close);
     await expectLater(container.read(provider.future), throwsException);
     expect(api.calls, 1);
-    user.publicAddress = 'http://new';
+    // Isar invalidates the cached object and returns a fresh user on a write.
+    user = FinampUser(
+      id: 'test',
+      publicAddress: 'http://new',
+      localAddress: '',
+      preferLocalNetwork: false,
+      isLocal: false,
+      accessToken: 'test',
+      serverId: 'test',
+    );
     container.invalidate(FinampUserHelper.finampCurrentUserProvider);
     await container.pump();
     expect((await container.read(provider.future))?.name, 'Music');
