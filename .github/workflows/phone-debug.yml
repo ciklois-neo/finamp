@@ -20,15 +20,16 @@ jobs:
           flutter-version: '3.47.5'
           cache: true
       - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
       - name: Format and retain patch
         run: |
-          dart format lib/components/NetworkSettingsScreen lib/screens/network_settings_screen.dart test/network_settings_test.dart
+          dart format lib/components/NetworkSettingsScreen lib/screens/network_settings_screen.dart test/network_settings_test.dart test/network_recovery_test.dart lib/services/item_by_id_provider.dart lib/services/music_screen_provider.dart lib/services/jellyfin_api_helper.dart
           git diff > formatting.patch
       - uses: actions/upload-artifact@v6
         with:
           name: formatting-patch
           path: formatting.patch
-      - run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/components/NetworkSettingsScreen lib/screens/network_settings_screen.dart test/network_settings_test.dart
+      - run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/components/NetworkSettingsScreen lib/screens/network_settings_screen.dart test/network_settings_test.dart test/network_recovery_test.dart lib/services/item_by_id_provider.dart lib/services/music_screen_provider.dart lib/services/jellyfin_api_helper.dart
       - run: flutter test
       - run: flutter build apk --debug --target-platform android-arm64
       - uses: actions/upload-artifact@v6
